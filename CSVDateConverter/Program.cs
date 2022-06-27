@@ -1,18 +1,18 @@
-﻿using System.Reflection;
-
-namespace CSVDateConverter
+﻿namespace CSVDateConverter
 {
     class Program
     {
 
-        static void Main(string[] args)
+        static void Main()
         {
             try
             {
                 Console.WriteLine("CSV files conversion successfully started!\n");
-                string path = Path.Combine(GetExecPath(), "conv-" + DateTime.UtcNow.ToString("yyyymmdd-hhmmss"));
-                CreateConvDir(path);
                 string[] files = Directory.GetFiles(GetExecPath(), "*.csv");
+
+                string path = Path.Combine(GetExecPath(), "conv-" + DateTime.UtcNow.ToString("yyyymmdd-hhmmss"));
+                if (files.Length > 0) CreateConvDir(path);
+                else Console.WriteLine("No CSV files found!");
 
                 foreach (string file in files)
                 {
@@ -23,16 +23,26 @@ namespace CSVDateConverter
                         string csv = ConvertCSV(file);
                         File.WriteAllText(Path.Combine(path, filename), csv);
                         Console.WriteLine("\tDone.\n");
-                    } catch
+                    }
+                    catch (IOException)
                     {
-                        Console.WriteLine("\tCould not convert \"" + filename + "\": Wrong format.\n");
+                        Console.WriteLine("\tCould not convert \"" + filename + "\": file already in use.\n");
+                    }
+                    catch
+                    {
+                        Console.WriteLine("\tCould not convert \"" + filename + "\": wrong format.\n");
                     }
                 }
-            } catch (Exception e)
-            {
-                Console.WriteLine("An error occured: " + e.Message);
             }
-            Console.WriteLine("Exiting..");
+            catch (UnauthorizedAccessException)
+            {
+                Console.WriteLine("Error: permissions are missing..");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("An error occured: " + e.ToString());
+            }
+            Console.WriteLine("\nExiting..");
             Console.ReadLine();
         }
 
@@ -58,8 +68,7 @@ namespace CSVDateConverter
 
         private static string GetExecPath()
         {
-            string execPath = Assembly.GetExecutingAssembly().Location;
-            return Path.GetDirectoryName(execPath) ?? "";
+            return Directory.GetCurrentDirectory();
         }
 
         private static void CreateConvDir(string path)
